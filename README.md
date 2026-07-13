@@ -23,11 +23,11 @@ Sections are tagged in headings:
 2. [What this program does](#what-this-program-does-everyday-users) — **Everyday users**
 3. [Cookie-oven sandbox](#cookie-oven-sandbox-everyday-users) — story and state diagram only; skip the programmer subsection
 4. [The four-layer pipeline](#the-four-layer-pipeline-everyone) — **Everyone**
-5. [Using the GUI](#using-the-gui-everyday-users) — **Everyday users**
+5. [Using the GUI](#using-the-gui-everyday-users) — **Everyday users** (includes activity log and Excel export)
 
 **Safe to skip:** Quick start (developers), Command-line examples, Project layout, Design principles, Development
 
-**Optional:** Run `python examples/demo.py` if you want to see the cookie-oven tutorial in the terminal (no chemistry knowledge required).
+**Optional:** Run `python examples/demo.py` if you want to see the cookie-oven tutorial in the terminal (no chemistry knowledge required). For a fuller GUI walkthrough, see **`USER_GUIDE.md`**.
 
 ### Suggested path — programmers
 
@@ -185,8 +185,10 @@ The window title is **Chemist's compass -- an experiment designer**. A cookie ic
 ### Tab 1 — Experimental design (DOE)
 
 1. Enter **reactants** and a **product** to define the chemical transition.
-2. Set fixed process details: mechanism, initiator, solvent, default temperature, and related fields.
+2. Set fixed process details: mechanism, initiator, solvent, **default temperature (°C) if not a DOE variable** (defaults to **25 °C** room-temperature baseline for Theory & Safety), and related fields.
 3. Add **DOE factors** (e.g. `Reaction time`, `Temperature`) and their levels, then submit each factor.
+   - Submitted factors appear in a **Submitted variables** list with **Edit** / **Del**.
+   - For time levels, include units (`30 mins`, `1 hr`, `6 hrs`). Mixed units are converted to a common scale so ranking and safety compare true durations.
 4. Click **Generate DOE** to fill the output trial matrix.
 
    **Generate DOE checks** (messagebox warnings; generation is blocked until fixed):
@@ -217,9 +219,29 @@ Supported modes include a compact 9-trial basic design and a fuller 27-trial des
 ### Tab 4 — Trend ranking
 
 - Click **Run trend ranking** to order safety-cleared trials by priority (`NOW`, `SOON`, `LATER`, and so on).
+- *(Optional)* Click **Save ranking as Excel** to export a human-readable `.xlsx` workbook (requires the `gui` extra: `openpyxl`):
+  - **Trend ranking** — same columns as the on-screen table
+  - **Trial details** — one column per DOE factor plus labeled process fields (not raw Python dict syntax)
 - The kernel uses your DOE factor names and any response history you add later; it does not reject trials—that happened upstream.
 
 **Tip:** Use **Run full workflow** on the DOE tab to execute all four layers in sequence.
+
+### Activity log and maintenance
+
+The GUI keeps a readable **activity log** of major steps (DOE generation, layer runs, exports, warnings, and errors).
+
+- Click **Activity log** (top-right) to view recent entries.
+- Click **Open log folder** in that dialog to find the full log file on disk.
+
+Default log location on Windows:
+
+```
+%LOCALAPPDATA%\ChemistsCompass\logs\chemists_compass.log
+```
+
+Old log files and in-memory session caches (including trend ranking history) are cleared automatically about every **six months** (log files older than **six months** are removed). Maintenance also runs once when the app starts.
+
+For a step-by-step walkthrough, see **`USER_GUIDE.md`** in the project root.
 
 ---
 
@@ -291,6 +313,8 @@ experiment_design/
 │   ├── hazard_input.py         # User hazard declarations (CLI & GUI)
 │   ├── ghs.py                  # GHS H-code catalog & signal words
 │   ├── trend.py                # Trial priority ranking
+│   ├── trend_export.py         # Trend ranking Excel export (openpyxl)
+│   ├── app_logging.py          # Activity log + six-month log/cache maintenance
 │   ├── mechanisms.py           # Reaction mechanism families
 │   ├── initiators.py           # Polymerization initiator rules
 │   ├── experiment_context.py   # Merging DOE factors into layer context
@@ -333,10 +357,11 @@ pip install -e ".[dev,gui]"
 pytest          # 150+ tests
 ```
 
-When changing layer behavior, add or update tests under `tests/`. Key integration tests cover the cookie-oven sandbox, real polymer trials, GHS hazard input, process thermal rules, trend ranking stability, GUI DOE transition warnings (`test_no_transition_warning.py`, `test_material_direction.py`), and icon path resolution (`test_gui_icon_paths.py`).
+When changing layer behavior, add or update tests under `tests/`. Key integration tests cover the cookie-oven sandbox, real polymer trials, GHS hazard input, process thermal rules (including **mixed time-unit** duration parsing), trend ranking stability, activity logging and maintenance (`test_app_logging.py`), human-readable Trend Excel export (`test_trend_export.py`), GUI DOE transition warnings (`test_no_transition_warning.py`, `test_material_direction.py`), and icon path resolution (`test_gui_icon_paths.py`).
 
 ---
 
 ## License (Reference)
 
 MIT — see `pyproject.toml`.
+
